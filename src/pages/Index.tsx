@@ -1,17 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { getArticles, getBooks, getVideos, Article, Book, Video } from '@/data/content';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
-  const [selectedBook, setSelectedBook] = useState<number | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
 
-  const articles = [
+  useEffect(() => {
+    setArticles(getArticles());
+    setBooks(getBooks());
+    setVideos(getVideos());
+  }, []);
+
+  const articlesOld = [
     { 
       id: 1, 
       title: 'О природе творчества', 
@@ -35,7 +45,7 @@ const Index = () => {
     }
   ];
 
-  const books = [
+  const booksOld = [
     {
       id: 1,
       title: 'Тени прошлого',
@@ -56,30 +66,6 @@ const Index = () => {
         { id: 1, title: 'Рассказ первый. Последний листок', content: 'За окном падал последний осенний лист. Медленно, плавно, как танцор, совершающий свой прощальный поклон. Старик сидел в кресле и наблюдал за этим танцем.\n\nОн знал: когда упадёт последний лист, придёт зима. А зима в его возрасте — это всегда риск. Последняя зима? Или ещё будет весна?\n\nЛист коснулся земли. Старик закрыл глаза.' },
         { id: 2, title: 'Рассказ второй. Станция', content: 'Поезд остановился на маленькой станции посреди леса. Станции, которой не было на карте.\n\n— Десять минут стоянки, — объявил проводник.\n\nОна вышла размять ноги. Перрон был пуст. Только ветер гулял между рельсов, поднимая пыль и старые газеты.\n\n— Красивое место, — сказал кто-то рядом.\n\nОна обернулась. На перроне никого не было.\n\nКогда она вернулась в вагон, проводник посмотрел на неё странно:\n\n— Мы тут не останавливались, мадам.' }
       ]
-    }
-  ];
-
-  const videos = [
-    {
-      id: 1,
-      title: 'Презентация романа "Тени прошлого"',
-      thumbnail: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=225&fit=crop',
-      duration: '15:42',
-      date: '1 декабря 2024'
-    },
-    {
-      id: 2,
-      title: 'Мастер-класс: Как создавать персонажей',
-      thumbnail: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=225&fit=crop',
-      duration: '28:15',
-      date: '15 ноября 2024'
-    },
-    {
-      id: 3,
-      title: 'Интервью о писательском ремесле',
-      thumbnail: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=225&fit=crop',
-      duration: '32:08',
-      date: '3 ноября 2024'
     }
   ];
 
@@ -186,6 +172,7 @@ const Index = () => {
         if (selectedBook && selectedChapter) {
           const book = books.find(b => b.id === selectedBook);
           const chapter = book?.chapters.find(c => c.id === selectedChapter);
+          const currentChapterIndex = book?.chapters.findIndex(c => c.id === selectedChapter) ?? -1;
           
           return (
             <div className="max-w-4xl mx-auto animate-fade-in">
@@ -210,16 +197,16 @@ const Index = () => {
               <div className="flex justify-between">
                 <Button 
                   variant="outline"
-                  disabled={selectedChapter === 1}
-                  onClick={() => setSelectedChapter(selectedChapter - 1)}
+                  disabled={currentChapterIndex === 0}
+                  onClick={() => book && setSelectedChapter(book.chapters[currentChapterIndex - 1].id)}
                 >
                   <Icon name="ChevronLeft" className="mr-2" size={18} />
                   Предыдущая глава
                 </Button>
                 <Button 
                   variant="outline"
-                  disabled={selectedChapter === book?.chapters.length}
-                  onClick={() => setSelectedChapter(selectedChapter + 1)}
+                  disabled={!book || currentChapterIndex === book.chapters.length - 1}
+                  onClick={() => book && setSelectedChapter(book.chapters[currentChapterIndex + 1].id)}
                 >
                   Следующая глава
                   <Icon name="ChevronRight" className="ml-2" size={18} />
@@ -305,7 +292,7 @@ const Index = () => {
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {videos.map((video) => (
-                <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.open(video.url, '_blank')}>
                   <div className="relative aspect-video bg-muted">
                     <img 
                       src={video.thumbnail} 
@@ -317,13 +304,10 @@ const Index = () => {
                         <Icon name="Play" size={24} className="text-black ml-1" />
                       </div>
                     </div>
-                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                      {video.duration}
-                    </div>
                   </div>
                   <CardHeader>
                     <CardTitle className="text-lg font-normal">{video.title}</CardTitle>
-                    <CardDescription>{video.date}</CardDescription>
+                    <CardDescription>{video.description}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}
